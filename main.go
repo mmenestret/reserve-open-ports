@@ -6,16 +6,23 @@ import (
 	"net"
 )
 
+func accept() bool {
+	ln, err := net.Listen("tcp", ":8081")
+	if err != nil {
+		fmt.Println("Error!")
+		return false
+		// handle error
+	}
+	_, err2 := ln.Accept()
+	if err2 != nil {
+		fmt.Println("Error!")
+		return false
+	}
+	return true
+}
+
 func bookPort(min int, max int) {
 	//currentPort := min
-	_, err := net.Listen("tcp", ":8080")
-	for err != nil {
-		if err != nil {
-			fmt.Println("Error!")
-			// handle error
-		}
-
-	}
 	fmt.Println("Success!")
 }
 
