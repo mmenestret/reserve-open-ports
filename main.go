@@ -2,38 +2,40 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"net"
+	"strings"
+	"strconv"
 )
-
-func open_port() bool {
-	tcpAddr, err := net.ResolveTCPAddr("tcp", "localhost:8081")
+func open_port(port int) bool {
+	address := strings.Join([]string{":", strconv.Itoa(port)}, "")
+	list, err := net.Listen("tcp", address)
 	if err != nil {
-		fmt.Println("Error!")
 		return false
-		// handle error
 	}
-	_, err1 := net.ListenTCP("tcp", tcpAddr)
-	if err1 != nil {
-		fmt.Println("Error!")
+
+	con, acceptErr := list.Accept()
+	buff := make([]byte, 1)
+	if acceptErr != nil {
 		return false
-		// handle error
 	}
-	return true
-}
 
-func bookPort(min int, max int) bool {
-	//currentPort := min
-	//has_port := false
-	//for !has_port {
-	return open_port()
-	//}
+	nb, readErr := con.Read(buff)
+	if readErr != nil {
+		return false
+	}
+	return (nb > 0)
 }
-
+func check_port_open(port int, done chan bool){
+		done <- open_port(port)
+}
 func main() {
 	flag.Parse()
-
-	port_is_open := bookPort(8080, 8090)
-	fmt.Println("Finished!")
-	fmt.Println(port_is_open)
+	first_port := 9000
+	port_range := 10
+	done := make(chan bool)
+	for i := 0; i <= port_range; i ++ {
+		go check_port_open(first_port + i, done)
+	}
+	c :=  <- done
+	print(c)
 }
