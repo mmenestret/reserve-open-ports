@@ -3,9 +3,10 @@ package main
 import (
 	"flag"
 	"net"
-	"strings"
 	"strconv"
+	"strings"
 )
+
 func open_port(port int) bool {
 	address := strings.Join([]string{":", strconv.Itoa(port)}, "")
 	list, err := net.Listen("tcp", address)
@@ -25,17 +26,17 @@ func open_port(port int) bool {
 	}
 	return (nb > 0)
 }
-func check_port_open(port int, done chan bool){
-		done <- open_port(port)
+func check_port_open(port int, done chan bool) {
+	done <- open_port(port)
 }
 func main() {
 	flag.Parse()
 	first_port := 9000
 	port_range := 10
 	done := make(chan bool)
-	for i := 0; i <= port_range; i ++ {
-		go check_port_open(first_port + i, done)
+	for i := 0; i <= port_range; i++ {
+		go check_port_open(first_port+i, done)
 	}
-	c :=  <- done
+	c := <-done
 	print(c)
 }
