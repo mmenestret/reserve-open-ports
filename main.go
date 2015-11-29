@@ -1,41 +1,44 @@
 package main
 
 import (
-	"flag"
 	"net"
-	"strings"
-	"strconv"
+	"log"
+	"fmt"
+	"syscall"
 )
-func open_port(port int) bool {
-	address := strings.Join([]string{":", strconv.Itoa(port)}, "")
-	list, err := net.Listen("tcp", address)
-	if err != nil {
-		return false
-	}
+func listenAndAccept(port int, isSocketOpened chan bool) {
+	fullAdd := fmt.Sprintf("%s:%d", "localhost", port)
 
-	con, acceptErr := list.Accept()
-	buff := make([]byte, 1)
-	if acceptErr != nil {
-		return false
+	listener, errListening := net.Listen("tcp", fullAdd)
+	if errListening != nil {
+		log.Println("Couldn't listen on", fullAdd)
+		syscall.Exit(1)
 	}
+	log.Printf("Listening & accepting connections on %s...\n", fullAdd)
 
-	nb, readErr := con.Read(buff)
-	if readErr != nil {
-		return false
+	// Raising the caller that it can now Dial on that address
+	isSocketOpened <- true
+
+	_, errAccepting := listener.Accept()
+	if errAccepting != nil {
+		log.Println("Couldn't accept on", fullAdd)
 	}
-	return (nb > 0)
 }
-func check_port_open(port int, done chan bool){
-		done <- open_port(port)
+
+func PingSocket(add string, port int){
+	fullAdd := fmt.Sprintf("%s:%d", add, port)
+	conn, err := net.Dial("tcp", fullAdd)
+	if err != nil {
+		log.Println("Port 9000 is NOT avaiable")
+	} else {
+		log.Println("Port 9000 is avaiable")
+		defer conn.Close()
+	}
 }
 func main() {
-	flag.Parse()
-	first_port := 9000
-	port_range := 10
-	done := make(chan bool)
-	for i := 0; i <= port_range; i ++ {
-		go check_port_open(first_port + i, done)
-	}
-	c :=  <- done
-	print(c)
+	isSocketOpened := make(chan bool)
+	port := 9000
+	go listenAndAccept(port, isSocketOpened)
+	<- isSocketOpened
+	PingSocket("localhost", port)
 }
