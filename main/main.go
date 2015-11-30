@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"strconv"
+	"strings"
 	"syscall"
 )
 
@@ -42,15 +43,13 @@ func main() {
 	var scriptToExec = flag.String("scriptToExec", "", "path to the script to exec")
 	flag.Parse()
 	freePorts := bookPorts(*initialPort, *lastPort, *numberOfPorts)
-	freePortsAsStrings := make([]string, 3)
+	freePortsAsStrings := []string{}
 	for _, p := range freePorts {
 		freePortsAsStrings = append(freePortsAsStrings, strconv.Itoa(p))
 	}
-
-	portsArg := append([]string{"--ports"}, freePortsAsStrings...)
 	s, _ := shlex.Split(*scriptToExec)
-	wholeCommand := append(s, portsArg...)
-	cmd := exec.Command(wholeCommand[0], wholeCommand[1:]...)
+	allArgs := append([]string{strings.Join(freePortsAsStrings, ",")}, s[1:]...)
+	cmd := exec.Command(s[0], allArgs...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()
