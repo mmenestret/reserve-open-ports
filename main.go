@@ -6,6 +6,14 @@ import (
 	"fmt"
 	"syscall"
 )
+
+type addr string
+func (l addr) Network() string{
+	return "tcp"
+}
+func (l addr) String() string{
+	return string(l)
+}
 func listenAndAccept(port int, isSocketOpened chan bool) {
 	fullAdd := fmt.Sprintf("%s:%d", "localhost", port)
 
@@ -19,26 +27,30 @@ func listenAndAccept(port int, isSocketOpened chan bool) {
 	// Raising the caller that it can now Dial on that address
 	isSocketOpened <- true
 
-	_, errAccepting := listener.Accept()
+	conn, errAccepting := listener.Accept()
 	if errAccepting != nil {
 		log.Println("Couldn't accept on", fullAdd)
 	}
+	log.Println("Closing after having received a connection from", conn.RemoteAddr().String())
+	conn.Close()
 }
 
 func PingSocket(add string, port int){
 	fullAdd := fmt.Sprintf("%s:%d", add, port)
-	conn, err := net.Dial("tcp", fullAdd)
+	d := net.Dialer{LocalAddr: addr(fullAdd)}
+	conn, err := d.Dial("tcp", fullAdd)
+	fmt.Println(d.LocalAddr.String())
 	if err != nil {
-		log.Println("Port 9000 is NOT avaiable")
+		log.Printf("Port %d is NOT avaiable\n", port)
 	} else {
-		log.Println("Port 9000 is avaiable")
+		log.Printf("Port %d is avaiable\n", port)
 		defer conn.Close()
 	}
 }
 func main() {
 	isSocketOpened := make(chan bool)
-	port := 9000
-	go listenAndAccept(port, isSocketOpened)
+	port := 9001
+	listenAndAccept(port, isSocketOpened)
 	<- isSocketOpened
-	PingSocket("localhost", port)
+	PingSocket("127.0.0.1", port)
 }
