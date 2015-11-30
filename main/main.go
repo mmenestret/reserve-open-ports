@@ -1,13 +1,14 @@
 package main
 
 import (
+	"code.google.com/p/go-shlex"
 	"flag"
 	"fmt"
 	"net"
+	"os"
 	"os/exec"
 	"strconv"
 	"syscall"
-	"os"
 )
 
 func port_is_taken(port int) bool {
@@ -42,10 +43,14 @@ func main() {
 	flag.Parse()
 	freePorts := bookPorts(*initialPort, *lastPort, *numberOfPorts)
 	freePortsAsStrings := make([]string, 3)
-	for _,p := range(freePorts){
+	for _, p := range freePorts {
 		freePortsAsStrings = append(freePortsAsStrings, strconv.Itoa(p))
 	}
-	cmd := exec.Command(*scriptToExec, freePortsAsStrings...)
+
+	portsArg := append([]string{"--ports"}, freePortsAsStrings...)
+	s, _ := shlex.Split(*scriptToExec)
+	wholeCommand := append(s, portsArg...)
+	cmd := exec.Command(wholeCommand[0], wholeCommand[1:]...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()
